@@ -1,0 +1,7 @@
+LangChain
+google-generativeai
+numpy
+pandas
+requests
+torch
+transformers
