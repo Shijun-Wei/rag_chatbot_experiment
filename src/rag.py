@@ -10,7 +10,7 @@ class RAGChatbot:
         # 1. Setup API Key
         os.environ["GOOGLE_API_KEY"] = api_key
         
-        # 2. Load the Data correctly
+        # 2. Load the Data 
         loader = TextLoader(document_path, encoding='utf-8')
         # You MUST call .load() to get the list of Documents
         documents = loader.load() 
