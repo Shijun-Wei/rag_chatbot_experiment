@@ -15,6 +15,7 @@ rag-chatbot
 │   └── documents       # Directory to store documents for retrieval
 ├── requirements.txt    # List of dependencies for the project
 └── README.md           # Documentation for the project
+└── src_notebook.ipynb <-- jupyter notebook for testing
 ```
 
 ## Setup Instructions
