@@ -1,26 +1,42 @@
+import os 
+from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+from langchain_community.document_loaders import TextLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS
+from langchain_classic.chains import RetrievalQA
+
 class RAGChatbot:
     def __init__(self, api_key, document_path):
-        self.api_key = api_key
-        self.document_path = document_path
-        self.documents = self.load_documents()
+        # 1. Setup API Key
+        os.environ["GOOGLE_API_KEY"] = api_key
+        
+        # 2. Load the Data correctly
+        loader = TextLoader(document_path, encoding='utf-8')
+        # You MUST call .load() to get the list of Documents
+        documents = loader.load() 
+        
+        # 3. Split the Documents (Pass the list 'documents', not 'loader')
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+        self.texts = text_splitter.split_documents(documents)
+        
+        # 4. Create Vector Store
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+        self.vector_db = FAISS.from_documents(self.texts, embeddings)
+        
+        # 5. Initialize LLM
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.3)
+        
+        # 6. Create Retrieval Chain
+        self.qa_chain = RetrievalQA.from_chain_type(
+            llm=llm,
+            chain_type="stuff",
+            retriever=self.vector_db.as_retriever(search_kwargs={"k": 3})
+        )
 
-    def load_documents(self):
-        # Logic to load documents from the specified document path
-        pass
-
-    def retrieve_relevant_documents(self, query):
-        # Logic to retrieve relevant documents based on the query
-        pass
-
-    def generate_response(self, query):
-        relevant_docs = self.retrieve_relevant_documents(query)
-        # Logic to generate a response using the Google Gemini model
-        pass
-
-    def chat(self):
-        while True:
-            user_input = input("You: ")
-            if user_input.lower() in ["exit", "quit"]:
-                break
-            response = self.generate_response(user_input)
-            print(f"Chatbot: {response}")
+    def get_response(self, user_query):
+        try:
+            # Using invoke() is the modern standard for chains
+            result = self.qa_chain.invoke({"query": user_query})
+            return result["result"]
+        except Exception as e:
+            return f"Error processing query: {str(e)}"
